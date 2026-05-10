@@ -3,55 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRUST - لوحة التحكم</title>
+    <title>TRUST PLATFORM</title>
     <style>
-        body { background-color: #0b0e11; color: white; font-family: sans-serif; margin: 0; padding: 0; }
-        .container { padding: 20px; max-width: 500px; margin: auto; }
-        .card { background: #1e2329; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .balance { font-size: 35px; font-weight: bold; color: #f3ba2f; margin: 10px 0; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #474d57; background: #2b2f36; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: #f3ba2f; color: black; }
-        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        #auth-section, #app-section, #ref-input-group { display: none; }
-        #status { color: #f6465d; font-size: 13px; margin-top: 10px; }
-        .toggle-auth { color: #f3ba2f; font-size: 13px; cursor: pointer; margin-top: 15px; text-decoration: underline; }
+        body { background-color: #0b0e11; color: white; font-family: sans-serif; margin: 0; text-align: center; }
+        .card { background: #1e2329; padding: 25px; border-radius: 15px; margin: 50px auto; width: 85%; max-width: 400px; border: 1px solid #333; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #474d57; background: #2b2f36; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; background: #f3ba2f; cursor: pointer; }
+        #app-section { display: none; }
+        .toggle { color: #f3ba2f; cursor: pointer; margin-top: 15px; font-size: 13px; text-decoration: underline; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <!-- قسم المصادقة -->
-    <div id="auth-section" class="card">
-        <h2 id="auth-title" style="color:#f3ba2f;">تسجيل الدخول</h2>
-        <input type="email" id="email" placeholder="البريد الإلكتروني">
-        <input type="password" id="pass" placeholder="كلمة المرور">
-        
-        <!-- خانة الإحالة تظهر فقط عند إنشاء حساب جديد -->
-        <div id="ref-input-group">
-            <input type="text" id="referral-code" placeholder="كود الإحالة (اختياري)">
-        </div>
+<div class="card" id="auth-section">
+    <h2 style="color:#f3ba2f">TRUST</h2>
+    <h4 id="title">تسجيل الدخول</h4>
+    <input type="email" id="email" placeholder="البريد الإلكتروني">
+    <input type="password" id="pass" placeholder="كلمة المرور">
+    <div id="ref-group" style="display:none"><input type="text" id="ref" placeholder="كود الإحالة"></div>
+    <button onclick="handleAuth()">استمرار</button>
+    <div class="toggle" onclick="toggle()">إنشاء حساب جديد</div>
+    <p id="err" style="color:red; font-size:12px"></p>
+</div>
 
-        <button id="auth-btn" onclick="handleAuth()">دخول</button>
-        <div id="status"></div>
-        <div class="toggle-auth" id="toggle-btn" onclick="toggleMode()">ليس لديك حساب؟ إنشاء حساب جديد</div>
-    </div>
-
-    <!-- قسم المنصة -->
-    <div id="app-section">
-        <div class="card">
-            <h2 style="color:#f3ba2f;">TRUST</h2>
-            <div style="font-size:12px; color:#848e9c;">رصيدك المتوفر</div>
-            <div class="balance" id="user-balance">0.00 USDT</div>
-        </div>
-        <div class="card">
-            <h4>تداول المهمة</h4>
-            <div class="btn-group">
-                <button style="background:#2ebd85; color:white" onclick="alert('تم الطلب')">LONG</button>
-                <button style="background:#f6465d; color:white" onclick="alert('تم الطلب')">SHORT</button>
-            </div>
-        </div>
-        <button onclick="auth.signOut()" style="background:none; color:grey;">خروج</button>
-    </div>
+<div class="card" id="app-section">
+    <h2 style="color:#f3ba2f">TRUST</h2>
+    <p>رصيدك الحالي</p>
+    <h1 id="bal">0.00 USDT</h1>
+    <button style="background:#2ebd85; color:white" onclick="alert('تم إرسال طلبك')">LONG / SHORT</button>
+    <br><br>
+    <button onclick="location.reload()" style="background:none; color:grey">خروج</button>
 </div>
 
 <script src="https://gstatic.com"></script>
@@ -71,45 +52,34 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
+    let isLogin = true;
 
-    let isLoginMode = true;
-
-    function toggleMode() {
-        isLoginMode = !isLoginMode;
-        document.getElementById('auth-title').innerText = isLoginMode ? "تسجيل الدخول" : "إنشاء حساب جديد";
-        document.getElementById('auth-btn').innerText = isLoginMode ? "دخول" : "تسجيل";
-        document.getElementById('toggle-btn').innerText = isLoginMode ? "ليس لديك حساب؟ إنشاء حساب جديد" : "لديك حساب بالفعل؟ سجل دخولك";
-        document.getElementById('ref-input-group').style.display = isLoginMode ? "none" : "block";
+    function toggle() {
+        isLogin = !isLogin;
+        document.getElementById('title').innerText = isLogin ? "تسجيل الدخول" : "حساب جديد";
+        document.getElementById('ref-group').style.display = isLogin ? "none" : "block";
     }
 
     auth.onAuthStateChanged(user => {
-        document.getElementById('auth-section').style.display = user ? 'none' : 'block';
-        document.getElementById('app-section').style.display = user ? 'block' : 'none';
-        if (user) loadData(user.uid);
+        if(user) {
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('app-section').style.display = 'block';
+            db.collection('users').doc(user.uid).onSnapshot(doc => {
+                if(doc.exists) document.getElementById('bal').innerText = doc.data().balance.toFixed(2) + " USDT";
+            });
+        }
     });
 
     async function handleAuth() {
-        const email = document.getElementById('email').value;
-        const pass = document.getElementById('pass').value;
-        const status = document.getElementById('status');
-        if(!email || !pass) { status.innerText = "يرجى تعبئة الحقول"; return; }
-
+        const e = document.getElementById('email').value;
+        const p = document.getElementById('pass').value;
         try {
-            if (isLoginMode) {
-                await auth.signInWithEmailAndPassword(email, pass);
-            } else {
-                const res = await auth.createUserWithEmailAndPassword(email, pass);
-                await db.collection('users').doc(res.user.uid).set({
-                    email, balance: 0, referralCount: 0, myCode: res.user.uid.substring(0,6)
-                });
+            if(isLogin) { await auth.signInWithEmailAndPassword(e, p); }
+            else {
+                const r = await auth.createUserWithEmailAndPassword(e, p);
+                await db.collection('users').doc(r.user.uid).set({email:e, balance:0});
             }
-        } catch (err) { status.innerText = err.message; }
-    }
-
-    function loadData(uid) {
-        db.collection('users').doc(uid).onSnapshot(doc => {
-            if(doc.exists) document.getElementById('user-balance').innerText = doc.data().balance.toFixed(2) + " USDT";
-        });
+        } catch(err) { document.getElementById('err').innerText = err.message; }
     }
 </script>
 </body>
