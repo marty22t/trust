@@ -15,24 +15,21 @@
 </head>
 <body>
 
-<div class="card" id="auth-section">
+<div id="auth-section" class="card">
     <h2 style="color:#f3ba2f">TRUST</h2>
     <h4 id="title">تسجيل الدخول</h4>
     <input type="email" id="email" placeholder="البريد الإلكتروني">
     <input type="password" id="pass" placeholder="كلمة المرور">
-    <div id="ref-group" style="display:none"><input type="text" id="ref" placeholder="كود الإحالة"></div>
     <button onclick="handleAuth()">استمرار</button>
     <div class="toggle" onclick="toggle()">إنشاء حساب جديد</div>
-    <p id="err" style="color:red; font-size:12px"></p>
+    <p id="err" style="color:#f6465d; font-size:12px; margin-top:10px;"></p>
 </div>
 
-<div class="card" id="app-section">
+<div id="app-section" class="card">
     <h2 style="color:#f3ba2f">TRUST</h2>
-    <p>رصيدك الحالي</p>
-    <h1 id="bal">0.00 USDT</h1>
-    <button style="background:#2ebd85; color:white" onclick="alert('تم إرسال طلبك')">LONG / SHORT</button>
-    <br><br>
-    <button onclick="location.reload()" style="background:none; color:grey">خروج</button>
+    <p>مرحباً بك، رصيدك الحالي:</p>
+    <h1 id="bal" style="color:#2ebd85">0.00 USDT</h1>
+    <button style="background:#333; color:white" onclick="location.reload()">تسجيل الخروج</button>
 </div>
 
 <script src="https://gstatic.com"></script>
@@ -57,7 +54,7 @@
     function toggle() {
         isLogin = !isLogin;
         document.getElementById('title').innerText = isLogin ? "تسجيل الدخول" : "حساب جديد";
-        document.getElementById('ref-group').style.display = isLogin ? "none" : "block";
+        document.getElementById('err').innerText = "";
     }
 
     auth.onAuthStateChanged(user => {
@@ -66,6 +63,10 @@
             document.getElementById('app-section').style.display = 'block';
             db.collection('users').doc(user.uid).onSnapshot(doc => {
                 if(doc.exists) document.getElementById('bal').innerText = doc.data().balance.toFixed(2) + " USDT";
+                else { 
+                    // إذا دخل المستخدم ولم يجد رصيد، نقوم بإنشاء سجل له فوراً
+                    db.collection('users').doc(user.uid).set({email: user.email, balance: 0});
+                }
             });
         }
     });
@@ -73,13 +74,19 @@
     async function handleAuth() {
         const e = document.getElementById('email').value;
         const p = document.getElementById('pass').value;
+        const errDisplay = document.getElementById('err');
+        errDisplay.innerText = "جاري العمل...";
+        
         try {
-            if(isLogin) { await auth.signInWithEmailAndPassword(e, p); }
-            else {
+            if(isLogin) { 
+                await auth.signInWithEmailAndPassword(e, p); 
+            } else {
                 const r = await auth.createUserWithEmailAndPassword(e, p);
                 await db.collection('users').doc(r.user.uid).set({email:e, balance:0});
             }
-        } catch(err) { document.getElementById('err').innerText = err.message; }
+        } catch(err) { 
+            errDisplay.innerText = "خطأ: " + err.message; 
+        }
     }
 </script>
 </body>
