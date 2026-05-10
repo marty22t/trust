@@ -12,46 +12,45 @@
         input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #474d57; background: #2b2f36; color: white; box-sizing: border-box; }
         button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: #f3ba2f; color: black; }
         .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        #auth-section, #app-section { display: none; }
+        #auth-section, #app-section, #ref-input-group { display: none; }
         #status { color: #f6465d; font-size: 13px; margin-top: 10px; }
-        .ref-box { background: #2b2f36; padding: 10px; border-radius: 8px; font-size: 12px; border: 1px dashed #f3ba2f; margin-top: 10px; word-break: break-all; }
+        .toggle-auth { color: #f3ba2f; font-size: 13px; cursor: pointer; margin-top: 15px; text-decoration: underline; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- واجهة الدخول -->
+    <!-- قسم المصادقة -->
     <div id="auth-section" class="card">
-        <h2 style="color:#f3ba2f; letter-spacing: 2px;">TRUST</h2>
+        <h2 id="auth-title" style="color:#f3ba2f;">تسجيل الدخول</h2>
         <input type="email" id="email" placeholder="البريد الإلكتروني">
         <input type="password" id="pass" placeholder="كلمة المرور">
-        <button onclick="handleAuth()">دخول / تسجيل جديد</button>
+        
+        <!-- خانة الإحالة تظهر فقط عند إنشاء حساب جديد -->
+        <div id="ref-input-group">
+            <input type="text" id="referral-code" placeholder="كود الإحالة (اختياري)">
+        </div>
+
+        <button id="auth-btn" onclick="handleAuth()">دخول</button>
         <div id="status"></div>
+        <div class="toggle-auth" id="toggle-btn" onclick="toggleMode()">ليس لديك حساب؟ إنشاء حساب جديد</div>
     </div>
 
-    <!-- واجهة المنصة -->
+    <!-- قسم المنصة -->
     <div id="app-section">
         <div class="card">
-            <h2 style="color:#f3ba2f; margin-bottom:5px;">TRUST</h2>
+            <h2 style="color:#f3ba2f;">TRUST</h2>
             <div style="font-size:12px; color:#848e9c;">رصيدك المتوفر</div>
             <div class="balance" id="user-balance">0.00 USDT</div>
         </div>
-
         <div class="card">
-            <h4>تداول المهمة الحالية</h4>
+            <h4>تداول المهمة</h4>
             <div class="btn-group">
-                <button style="background:#2ebd85; color:white" onclick="alert('تم إرسال طلب Long بنجاح')">LONG</button>
-                <button style="background:#f6465d; color:white" onclick="alert('تم إرسال طلب Short بنجاح')">SHORT</button>
+                <button style="background:#2ebd85; color:white" onclick="alert('تم الطلب')">LONG</button>
+                <button style="background:#f6465d; color:white" onclick="alert('تم الطلب')">SHORT</button>
             </div>
         </div>
-
-        <div class="card">
-            <h4>نظام الإحالة</h4>
-            <div style="font-size:14px;">إجمالي الإحالات: <span id="ref-count" style="color:#f3ba2f">0</span></div>
-            <div class="ref-box" id="ref-link">جاري تحميل رابطك...</div>
-        </div>
-
-        <button onclick="logout()" style="background:none; color:grey; font-size:12px;">تسجيل الخروج</button>
+        <button onclick="auth.signOut()" style="background:none; color:grey;">خروج</button>
     </div>
 </div>
 
@@ -60,10 +59,9 @@
 <script src="https://gstatic.com"></script>
 
 <script>
-    // مفاتيح Firebase الخاصة بك مدمجة أدناه
     const firebaseConfig = {
       apiKey: "AIzaSyBm9fQ1fDvhPD2_FpA1CUskHbKpgd-FNOc",
-      authDomain: "trust-d33d3.firebaseapp.com",
+      authDomain: "://firebaseapp.com",
       projectId: "trust-d33d3",
       storageBucket: "trust-d33d3.firebasestorage.app",
       messagingSenderId: "880308194472",
@@ -74,52 +72,45 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    let isLoginMode = true;
+
+    function toggleMode() {
+        isLoginMode = !isLoginMode;
+        document.getElementById('auth-title').innerText = isLoginMode ? "تسجيل الدخول" : "إنشاء حساب جديد";
+        document.getElementById('auth-btn').innerText = isLoginMode ? "دخول" : "تسجيل";
+        document.getElementById('toggle-btn').innerText = isLoginMode ? "ليس لديك حساب؟ إنشاء حساب جديد" : "لديك حساب بالفعل؟ سجل دخولك";
+        document.getElementById('ref-input-group').style.display = isLoginMode ? "none" : "block";
+    }
+
     auth.onAuthStateChanged(user => {
-        const authSec = document.getElementById('auth-section');
-        const appSec = document.getElementById('app-section');
-        if (user) {
-            authSec.style.display = 'none';
-            appSec.style.display = 'block';
-            loadUserData(user);
-        } else {
-            authSec.style.display = 'block';
-            appSec.style.display = 'none';
-        }
+        document.getElementById('auth-section').style.display = user ? 'none' : 'block';
+        document.getElementById('app-section').style.display = user ? 'block' : 'none';
+        if (user) loadData(user.uid);
     });
 
     async function handleAuth() {
         const email = document.getElementById('email').value;
         const pass = document.getElementById('pass').value;
         const status = document.getElementById('status');
-        if(!email || !pass) { status.innerText = "أدخل البيانات أولاً"; return; }
-        
+        if(!email || !pass) { status.innerText = "يرجى تعبئة الحقول"; return; }
+
         try {
-            await auth.signInWithEmailAndPassword(email, pass);
-        } catch (err) {
-            try {
+            if (isLoginMode) {
+                await auth.signInWithEmailAndPassword(email, pass);
+            } else {
                 const res = await auth.createUserWithEmailAndPassword(email, pass);
                 await db.collection('users').doc(res.user.uid).set({
-                    email: email,
-                    balance: 0,
-                    referralCount: 0,
-                    myCode: res.user.uid.substring(0,6)
+                    email, balance: 0, referralCount: 0, myCode: res.user.uid.substring(0,6)
                 });
-            } catch (e) { status.innerText = e.message; }
-        }
+            }
+        } catch (err) { status.innerText = err.message; }
     }
 
-    function loadUserData(user) {
-        db.collection('users').doc(user.uid).onSnapshot(doc => {
-            if(doc.exists) {
-                const data = doc.data();
-                document.getElementById('user-balance').innerText = (data.balance || 0).toFixed(2) + " USDT";
-                document.getElementById('ref-count').innerText = data.referralCount || 0;
-                document.getElementById('ref-link').innerText = window.location.origin + window.location.pathname + "?ref=" + data.myCode;
-            }
+    function loadData(uid) {
+        db.collection('users').doc(uid).onSnapshot(doc => {
+            if(doc.exists) document.getElementById('user-balance').innerText = doc.data().balance.toFixed(2) + " USDT";
         });
     }
-
-    function logout() { auth.signOut(); }
 </script>
 </body>
 </html>
