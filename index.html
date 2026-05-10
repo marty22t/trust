@@ -3,101 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRUST - منصة التداول الآمنة</title>
+    <title>TRUST - لوحة التحكم</title>
     <style>
-        body { background-color: #0b0e11; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #1e2329; padding: 30px; border-radius: 20px; width: 85%; max-width: 400px; text-align: center; border: 1px solid #333; box-shadow: 0 15px 35px rgba(0,0,0,0.7); }
-        .logo { color: #f3ba2f; font-size: 35px; font-weight: bold; margin-bottom: 5px; letter-spacing: 2px; }
-        .slogan { color: #848e9c; font-size: 12px; margin-bottom: 25px; }
-        input { width: 100%; padding: 15px; margin: 10px 0; border-radius: 10px; border: 1px solid #474d57; background: #2b2f36; color: white; box-sizing: border-box; outline: none; transition: 0.3s; }
-        input:focus { border-color: #f3ba2f; }
-        .btn-main { width: 100%; padding: 15px; border-radius: 10px; border: none; background: #f3ba2f; color: black; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; }
-        .btn-sub { background: none; color: #f3ba2f; border: none; margin-top: 15px; cursor: pointer; font-size: 14px; text-decoration: underline; }
-        #status { margin-top: 15px; font-size: 13px; color: #f6465d; min-height: 18px; }
+        body { background-color: #0b0e11; color: white; font-family: sans-serif; margin: 0; padding: 0; }
+        .container { padding: 20px; max-width: 500px; margin: auto; }
+        .card { background: #1e2329; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .balance { font-size: 35px; font-weight: bold; color: #f3ba2f; margin: 10px 0; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #474d57; background: #2b2f36; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: #f3ba2f; color: black; }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        #auth-section, #app-section { display: none; }
+        #status { color: #f6465d; font-size: 13px; margin-top: 10px; }
+        .ref-box { background: #2b2f36; padding: 10px; border-radius: 8px; font-size: 12px; border: 1px dashed #f3ba2f; margin-top: 10px; word-break: break-all; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <div class="logo">TRUST</div>
-        <div class="slogan">بوابتك للتداول الذكي والآمن</div>
-        
+<div class="container">
+    <!-- واجهة الدخول -->
+    <div id="auth-section" class="card">
+        <h2 style="color:#f3ba2f; letter-spacing: 2px;">TRUST</h2>
         <input type="email" id="email" placeholder="البريد الإلكتروني">
         <input type="password" id="pass" placeholder="كلمة المرور">
-        <input type="text" id="refCode" placeholder="كود الإحالة (اختياري)">
-        
-        <button class="btn-main" onclick="handleAuth('login')">تسجيل الدخول</button>
-        <button class="btn-sub" onclick="handleAuth('signup')">ليس لديك حساب؟ سجل الآن</button>
+        <button onclick="handleAuth()">دخول / تسجيل جديد</button>
         <div id="status"></div>
     </div>
 
-    <!-- مكتبات Firebase -->
-    <script src="https://gstatic.com"></script>
-    <script src="https://gstatic.com"></script>
-    <script src="https://gstatic.com"></script>
+    <!-- واجهة المنصة -->
+    <div id="app-section">
+        <div class="card">
+            <h2 style="color:#f3ba2f; margin-bottom:5px;">TRUST</h2>
+            <div style="font-size:12px; color:#848e9c;">رصيدك المتوفر</div>
+            <div class="balance" id="user-balance">0.00 USDT</div>
+        </div>
 
-    <script>
-        // ⚠️ استبدل المعلومات التالية بالمعلومات التي نسختها من Firebase Config
-        const firebaseConfig = {
-            apiKey: "AIzaSyBm9fQ1fDvhPD2_FpA1CUskHbKpgd-FNOc",
-            authDomain: "trust-d33d3.firebaseapp.com",
-            projectId: "trust-d33d3",
-            storageBucket: "trust-d33d3.firebasestorage.app",
-            messagingSenderId: "880308194472",
-            appId: "1:880308194472:web:944b9240623d4d359d469d"
-        };
+        <div class="card">
+            <h4>تداول المهمة الحالية</h4>
+            <div class="btn-group">
+                <button style="background:#2ebd85; color:white" onclick="alert('تم إرسال طلب Long بنجاح')">LONG</button>
+                <button style="background:#f6465d; color:white" onclick="alert('تم إرسال طلب Short بنجاح')">SHORT</button>
+            </div>
+        </div>
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        <div class="card">
+            <h4>نظام الإحالة</h4>
+            <div style="font-size:14px;">إجمالي الإحالات: <span id="ref-count" style="color:#f3ba2f">0</span></div>
+            <div class="ref-box" id="ref-link">جاري تحميل رابطك...</div>
+        </div>
 
-        async function handleAuth(type) {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('pass').value;
-            const refCode = document.getElementById('refCode').value; // كود الشخص الذي دعاك
-            const status = document.getElementById('status');
+        <button onclick="logout()" style="background:none; color:grey; font-size:12px;">تسجيل الخروج</button>
+    </div>
+</div>
 
-            if (!email || !pass) { status.innerText = "يرجى ملء كافة البيانات"; return; }
+<script src="https://gstatic.com"></script>
+<script src="https://gstatic.com"></script>
+<script src="https://gstatic.com"></script>
 
-            try {
-                if (type === 'signup') {
-                    const res = await auth.createUserWithEmailAndPassword(email, pass);
-                    const uid = res.user.uid;
-                    
-                    // إنشاء بيانات المستخدم مع نظام الإحالة
-                    await db.collection('users').doc(uid).set({
-                        uid: uid,
-                        email: email,
-                        balance: 0,
-                        referralCount: 0, // عدد الأشخاص الذين دعاهم
-                        invitedBy: refCode || "none", // من الذي دعاه؟
-                        myReferralCode: uid.substring(0, 6), // كود إحالته الخاص (أول 6 أحرف من معرفه)
-                        joinedAt: new Date()
-                    });
+<script>
+    // مفاتيح Firebase الخاصة بك مدمجة أدناه
+    const firebaseConfig = {
+      apiKey: "AIzaSyBm9fQ1fDvhPD2_FpA1CUskHbKpgd-FNOc",
+      authDomain: "trust-d33d3.firebaseapp.com",
+      projectId: "trust-d33d3",
+      storageBucket: "trust-d33d3.firebasestorage.app",
+      messagingSenderId: "880308194472",
+      appId: "1:880308194472:web:944b9240623d4d359d469d"
+    };
 
-                    // إذا كان هناك كود إحالة، سنقوم بزيادة عدد إحالات الشخص الداعي
-                    if (refCode) {
-                        const inviterQuery = await db.collection('users').where('myReferralCode', '==', refCode).get();
-                        if (!inviterQuery.empty) {
-                            const inviterDoc = inviterQuery.docs[0];
-                            await db.collection('users').doc(inviterDoc.id).update({
-                                referralCount: firebase.firestore.FieldValue.increment(1)
-                            });
-                        }
-                    }
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-                    status.style.color = "#2ebd85";
-                    status.innerText = "تم إنشاء حساب TRUST بنجاح!";
-                } else {
-                    await auth.signInWithEmailAndPassword(email, pass);
-                    status.style.color = "#2ebd85";
-                    status.innerText = "جاري تحويلك للمنصة...";
-                    // سنقوم بتوجيهه للصفحة الرئيسية في الخطوة القادمة
-                }
-            } catch (error) {
-                status.innerText = "خطأ: " + error.message;
-            }
+    auth.onAuthStateChanged(user => {
+        const authSec = document.getElementById('auth-section');
+        const appSec = document.getElementById('app-section');
+        if (user) {
+            authSec.style.display = 'none';
+            appSec.style.display = 'block';
+            loadUserData(user);
+        } else {
+            authSec.style.display = 'block';
+            appSec.style.display = 'none';
         }
-    </script>
+    });
+
+    async function handleAuth() {
+        const email = document.getElementById('email').value;
+        const pass = document.getElementById('pass').value;
+        const status = document.getElementById('status');
+        if(!email || !pass) { status.innerText = "أدخل البيانات أولاً"; return; }
+        
+        try {
+            await auth.signInWithEmailAndPassword(email, pass);
+        } catch (err) {
+            try {
+                const res = await auth.createUserWithEmailAndPassword(email, pass);
+                await db.collection('users').doc(res.user.uid).set({
+                    email: email,
+                    balance: 0,
+                    referralCount: 0,
+                    myCode: res.user.uid.substring(0,6)
+                });
+            } catch (e) { status.innerText = e.message; }
+        }
+    }
+
+    function loadUserData(user) {
+        db.collection('users').doc(user.uid).onSnapshot(doc => {
+            if(doc.exists) {
+                const data = doc.data();
+                document.getElementById('user-balance').innerText = (data.balance || 0).toFixed(2) + " USDT";
+                document.getElementById('ref-count').innerText = data.referralCount || 0;
+                document.getElementById('ref-link').innerText = window.location.origin + window.location.pathname + "?ref=" + data.myCode;
+            }
+        });
+    }
+
+    function logout() { auth.signOut(); }
+</script>
 </body>
 </html>
