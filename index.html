@@ -8,9 +8,10 @@
         body { background-color: #0b0e11; color: white; font-family: sans-serif; margin: 0; text-align: center; }
         .card { background: #1e2329; padding: 25px; border-radius: 15px; margin: 50px auto; width: 85%; max-width: 400px; border: 1px solid #333; }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #474d57; background: #2b2f36; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; background: #f3ba2f; cursor: pointer; }
+        button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; background: #f3ba2f; cursor: pointer; color: black; }
+        .toggle { color: #f3ba2f; cursor: pointer; margin-top: 15px; font-size: 13px; text-decoration: underline; display: inline-block; }
         #app-section { display: none; }
-        .toggle { color: #f3ba2f; cursor: pointer; margin-top: 15px; font-size: 13px; text-decoration: underline; }
+        #err { color: #f6465d; font-size: 12px; margin-top: 10px; min-height: 15px; }
     </style>
 </head>
 <body>
@@ -20,23 +21,27 @@
     <h4 id="title">تسجيل الدخول</h4>
     <input type="email" id="email" placeholder="البريد الإلكتروني">
     <input type="password" id="pass" placeholder="كلمة المرور">
+    <div id="ref-group" style="display:none"><input type="text" id="ref" placeholder="كود الإحالة"></div>
     <button onclick="handleAuth()">استمرار</button>
-    <div class="toggle" onclick="toggle()">إنشاء حساب جديد</div>
-    <p id="err" style="color:#f6465d; font-size:12px; margin-top:10px;"></p>
+    <br>
+    <div id="toggle-text" class="toggle" onclick="toggleAuthMode()">إنشاء حساب جديد</div>
+    <div id="err"></div>
 </div>
 
 <div id="app-section" class="card">
     <h2 style="color:#f3ba2f">TRUST</h2>
     <p>مرحباً بك، رصيدك الحالي:</p>
     <h1 id="bal" style="color:#2ebd85">0.00 USDT</h1>
-    <button style="background:#333; color:white" onclick="location.reload()">تسجيل الخروج</button>
+    <button style="background:#333; color:white" onclick="handleLogout()">تسجيل الخروج</button>
 </div>
 
+<!-- Firebase SDKs -->
 <script src="https://gstatic.com"></script>
 <script src="https://gstatic.com"></script>
 <script src="https://gstatic.com"></script>
 
 <script>
+    // 1. التعريفات الأساسية
     const firebaseConfig = {
       apiKey: "AIzaSyBm9fQ1fDvhPD2_FpA1CUskHbKpgd-FNOc",
       authDomain: "://firebaseapp.com",
@@ -46,47 +51,94 @@
       appId: "1:880308194472:web:944b9240623d4d359d469d"
     };
 
+    // 2. تشغيل Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-    let isLogin = true;
 
-    function toggle() {
-        isLogin = !isLogin;
-        document.getElementById('title').innerText = isLogin ? "تسجيل الدخول" : "حساب جديد";
-        document.getElementById('err').innerText = "";
+    // 3. متغير الحالة (Login / Signup)
+    let isLoginMode = true;
+
+    // 4. وظيفة التبديل بين الدخول والتسجيل
+    function toggleAuthMode() {
+        isLoginMode = !isLoginMode;
+        const title = document.getElementById('title');
+        const toggleText = document.getElementById('toggle-text');
+        const refGroup = document.getElementById('ref-group');
+        
+        if (isLoginMode) {
+            title.innerText = "تسجيل الدخول";
+            toggleText.innerText = "إنشاء حساب جديد";
+            refGroup.style.display = "none";
+        } else {
+            title.innerText = "حساب جديد";
+            toggleText.innerText = "لديك حساب؟ سجل دخولك";
+            refGroup.style.display = "block";
+        }
     }
 
+    // 5. مراقبة حالة المستخدم
     auth.onAuthStateChanged(user => {
-        if(user) {
-            document.getElementById('auth-section').style.display = 'none';
-            document.getElementById('app-section').style.display = 'block';
+        const authSection = document.getElementById('auth-section');
+        const appSection = document.getElementById('app-section');
+        
+        if (user) {
+            authSection.style.display = 'none';
+            appSection.style.display = 'block';
+            
+            // جلب الرصيد وتحديثه لحظياً
             db.collection('users').doc(user.uid).onSnapshot(doc => {
-                if(doc.exists) document.getElementById('bal').innerText = doc.data().balance.toFixed(2) + " USDT";
-                else { 
-                    // إذا دخل المستخدم ولم يجد رصيد، نقوم بإنشاء سجل له فوراً
-                    db.collection('users').doc(user.uid).set({email: user.email, balance: 0});
+                if (doc.exists) {
+                    document.getElementById('bal').innerText = (doc.data().balance || 0).toFixed(2) + " USDT";
+                } else {
+                    // إنشاء وثيقة للمستخدم إذا لم تكن موجودة
+                    db.collection('users').doc(user.uid).set({
+                        email: user.email,
+                        balance: 0,
+                        createdAt: new Date()
+                    });
                 }
             });
+        } else {
+            authSection.style.display = 'block';
+            appSection.style.display = 'none';
         }
     });
 
+    // 6. تنفيذ الدخول أو التسجيل
     async function handleAuth() {
-        const e = document.getElementById('email').value;
-        const p = document.getElementById('pass').value;
+        const email = document.getElementById('email').value;
+        const pass = document.getElementById('pass').value;
         const errDisplay = document.getElementById('err');
-        errDisplay.innerText = "جاري العمل...";
         
-        try {
-            if(isLogin) { 
-                await auth.signInWithEmailAndPassword(e, p); 
-            } else {
-                const r = await auth.createUserWithEmailAndPassword(e, p);
-                await db.collection('users').doc(r.user.uid).set({email:e, balance:0});
-            }
-        } catch(err) { 
-            errDisplay.innerText = "خطأ: " + err.message; 
+        if (!email || !pass) {
+            errDisplay.innerText = "يرجى إدخال البريد وكلمة المرور";
+            return;
         }
+
+        errDisplay.innerText = "جاري المعالجة...";
+
+        try {
+            if (isLoginMode) {
+                await auth.signInWithEmailAndPassword(email, pass);
+            } else {
+                const res = await auth.createUserWithEmailAndPassword(email, pass);
+                await db.collection('users').doc(res.user.uid).set({
+                    email: email,
+                    balance: 0,
+                    createdAt: new Date()
+                });
+            }
+        } catch (error) {
+            errDisplay.innerText = "خطأ: " + error.message;
+        }
+    }
+
+    // 7. الخروج
+    function handleLogout() {
+        auth.signOut().then(() => {
+            window.location.reload();
+        });
     }
 </script>
 </body>
